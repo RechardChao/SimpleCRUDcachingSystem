@@ -29,7 +29,7 @@ const (
 time myCache struct {
     defaultExpiration       time.Duation
     dataBlocks              map[string]dataBlock
-    mutex                   syc.RWMutex
+    mu                      syc.RWMutex
     gcInterval              time.Duration
     stopGc                  chan bool
 
@@ -59,7 +59,7 @@ func (ca *myCache) delete(k string) {
 
 //delete the expired dataBlock
 
-func (ca *Cache) DeleteExpiredData() {
+func (ca *myCache) DeleteExpiredData() {
     now := time.Now().UnixNano()
     ca.mu.Lock()
     defer ca.mu.Unlock()
@@ -72,7 +72,7 @@ func (ca *Cache) DeleteExpiredData() {
 }
 
 
-func (ca *Cache) Set (k string, v interface{},d time.Duration) {
+func (ca *myCache) Set (k string, v interface{},d time.Duration) {
     var t int64
     if d == DefaultExpiraion {
         d = ca.defaultExpiration
@@ -93,7 +93,7 @@ func (ca *Cache) Set (k string, v interface{},d time.Duration) {
 
 }
 
-func (ca *Cache) set(k string,v interface{},d time.Duration){
+func (ca *myCache) set(k string,v interface{},d time.Duration){
     var t int64
     if d == DefaultExpiration {
         d = ca.defaultExpiration
@@ -108,7 +108,7 @@ func (ca *Cache) set(k string,v interface{},d time.Duration){
 }
 
 
-func (ca *Cache) get(k string) (interface{},bool){
+func (ca *myCache) get(k string) (interface{},bool){
     item,ok := ca.dataBlocks
     if ok != nil {
         return nil,false
@@ -121,7 +121,7 @@ func (ca *Cache) get(k string) (interface{},bool){
 
 
 
-func (ca *Cache) Add(k string, v interface{},d time.Duration) error {
+func (ca *myCache) Add(k string, v interface{},d time.Duration) error {
     ca.mu.Lock()
     _,ok := c.get(k)
     if ok {
@@ -135,7 +135,7 @@ func (ca *Cache) Add(k string, v interface{},d time.Duration) error {
 }
 
 
-func (ca,*Cache) Get(k string)(interface{},bool){
+func (ca,*myCache) Get(k string)(interface{},bool){
     ca.mu.RLock()
     item,ok := ca.dataBlocks[k]
     if ok != nil {
@@ -148,7 +148,7 @@ func (ca,*Cache) Get(k string)(interface{},bool){
 }
 
 
-func (ca *Cache) Replace(k string, v interface, d time.Duration) error {
+func (ca *myCache) Replace(k string, v interface, d time.Duration) error {
     ca.mu.Lock()
     _,found := ca.get(k)
     if !found {
@@ -162,14 +162,14 @@ func (ca *Cache) Replace(k string, v interface, d time.Duration) error {
 
 
 
-func (ca *Cache) Delete(k string) {
+func (ca *myCache) Delete(k string) {
     ca.mu.Lock()
     ca.delete(k)
     ca.Unlock()
 
 }
 
-func (ca *Cache) Save(w io.Writer) error {
+func (ca *myCache) Save(w io.Writer) error {
     var err error
     encoder := gob.NewEncoder (w)
     defer func() {
@@ -189,7 +189,7 @@ func (ca *Cache) Save(w io.Writer) error {
 }
 
 
-func (ca *；Cache) SaveFile (file string) error{
+func (ca *myCache) SaveFile (file string) error{
     f,err := os.Create(file)
     if err != nil {
         return err
@@ -202,7 +202,7 @@ func (ca *；Cache) SaveFile (file string) error{
 }
 
 
-func (ca *Cache) Load(r io.Reader) error {
+func (ca *myCache) Load(r io.Reader) error {
     decode := gob.NewEncoderDecoder(r)
     items := map[string]dataBlock
     err := decode.Decode(&items)
@@ -220,7 +220,7 @@ func (ca *Cache) Load(r io.Reader) error {
 }
 
 
-func (ca *Cache) LoadFile(file string) error {
+func (ca *myCache) LoadFile(file string) error {
     f,err := os.Open(file)
 
     if err != nil { return err }
@@ -229,27 +229,27 @@ func (ca *Cache) LoadFile(file string) error {
 }
 
 
-func (ca *Cache) Count() int {
+func (ca *myCache) Count() int {
     ca.mu.Rlock()
     defer ca.mu.RUnlock()
     return len(ca.dataBlocks)
 }
 
 
-func (ca *Cache) Flush() {
+func (ca *myCache) Flush() {
     ca.mu.Lock()
     defer ca.mu.Unlock()
     ca.dataBlocks = map[string]DataBlock{}
 }
 
 
-func (ca *Cache) stopGc() {
+func (ca *myCache) stopGc() {
     ca.stopGc <- true
 }
 
 
 func NewCache(defaultExpiration,gcInterval time.Duration) {
-    ca := &Cache{
+    ca := &myCache{
         defaultExpiration:  defaultExpiration,
         gcInterval:         gcInterval,
         dataBlocks:         map[string]DataBlock{},
